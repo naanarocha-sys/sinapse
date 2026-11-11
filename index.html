@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#070B19">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="SINAPSE: party game de conexão neural para jogar passando o celular na mesa.">
+<title>SINAPSE</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-phase="home">
+
+<div id="app">
+  <header class="top">
+    <button id="btnHome" class="icon" aria-label="Voltar ao menu" title="Menu">☰</button>
+    <div class="brand">SINAPSE</div>
+    <div id="hud" class="hud"></div>
+    <button id="btnMute" class="icon" aria-label="Ligar ou desligar o som" title="Som">🔊</button>
+  </header>
+
+  <div id="banner" class="banner"></div>
+
+  <div id="card" class="card">
+    <span class="card-label">TEMA DA RODADA</span>
+    <h2 id="cardTema">—</h2>
+  </div>
+
+  <div id="stage" class="stage"><canvas id="wave" aria-label="Onda neural entre dois cérebros"></canvas></div>
+
+  <div class="poles">
+    <div class="pole left"><span>◀ 0%</span><b id="poleL"></b></div>
+    <div class="pole right"><span>100% ▶</span><b id="poleR"></b></div>
+  </div>
+
+  <p id="instr" class="instr"></p>
+
+  <div id="result" class="result" data-show="result" hidden><div id="resTitle"></div><div id="resPts"></div><div id="resOpp"></div></div>
+
+  <div class="controls">
+    <button id="btnReveal" class="btn primary" data-show="guide" data-sfx="none" hidden>Revelar Frequência Alvo</button>
+    <div class="row" data-show="guide" hidden><button id="btnSwap" class="btn ghost small">↻ Trocar carta</button></div>
+    <button id="btnHide" class="btn primary" data-show="guideShown" data-sfx="none" hidden>Esconder Onda e Colocar na Mesa</button>
+    <div class="nudge" data-show="team" hidden>
+      <button id="btnLeft" class="btn ghost" data-sfx="none" aria-label="Mover o pulso para a esquerda">◀</button>
+      <span>arraste o pulso na onda</span>
+      <button id="btnRight" class="btn ghost" data-sfx="none" aria-label="Mover o pulso para a direita">▶</button>
+    </div>
+    <div class="opp" data-show="team" data-only="teams" hidden>
+      <p id="oppLabel"></p>
+      <div class="row two">
+        <button class="btn opp-btn" data-opp="left" data-sfx="none">⚡ Palpite Adversário: Alvo está mais à ESQUERDA</button>
+        <button class="btn opp-btn" data-opp="right" data-sfx="none">⚡ Mais à DIREITA</button>
+      </div>
+    </div>
+    <button id="btnSync" class="btn primary pulse" data-show="team" data-sfx="none" hidden>Sincronizar (Revelar)</button>
+    <button id="btnNext" class="btn primary" data-show="result" hidden>Próxima Rodada</button>
+  </div>
+</div>
+
+<!-- HOME -->
+<section id="home" class="overlay home" data-show="home">
+  <div class="home-inner">
+    <h1 class="logo">SINAPSE</h1>
+    <p class="tagline">Conecte mentes. Sintonize a frequência.</p>
+    <div class="modes">
+      <button class="mode" data-pick="teams"><span class="ico">⚔️</span><b>2 Times</b><small>Disputa até 10 pontos</small></button>
+      <button class="mode" data-pick="coop"><span class="ico">🤝</span><b>Cooperativo</b><small>2+ jogadores · 8 rodadas</small></button>
+    </div>
+    <button id="btnStart" class="btn primary big">Iniciar Conexão</button>
+    <button id="btnContinue" class="btn ghost" hidden>Continuar partida salva</button>
+    <button id="btnPremium" class="btn premium">🧠 Pacote Expansão Neural (+200 Cartas) - R$ 4,99</button>
+    <button id="btnRules" class="link">Como jogar</button>
+  </div>
+</section>
+
+<!-- LOJA (simulada) -->
+<div id="modalPremium" class="overlay modal" data-dismiss hidden>
+  <div class="sheet">
+    <button class="close" data-close aria-label="Fechar">×</button>
+    <h2>Pacote Expansão Neural</h2>
+    <p class="sub">+200 cartas novas para a mesa · R$ 4,99</p>
+    <div id="premiumPreview" class="preview"></div>
+    <p id="premiumStatus" class="status"></p>
+    <button id="btnBuy" class="btn premium">Comprar por R$ 4,99</button>
+    <button id="btnUnlockTest" class="btn ghost">Desbloquear (modo teste)</button>
+    <p class="fine">Compra simulada: nenhuma cobrança é feita nesta versão.</p>
+  </div>
+</div>
+
+<!-- COMO JOGAR -->
+<div id="modalRules" class="overlay modal" data-dismiss hidden>
+  <div class="sheet">
+    <button class="close" data-close aria-label="Fechar">×</button>
+    <h2>Como jogar</h2>
+    <ol class="rules">
+      <li>A <b>Mente Brilhante</b> da rodada toca em <i>Revelar</i> e vê, escondido dos outros, onde está o alvo na onda entre os dois polos da carta.</li>
+      <li>Ela diz em voz alta uma dica que represente aquela posição. Nada de números!</li>
+      <li>Com o celular na mesa, o time arrasta o pulso pela onda até onde acha que a dica aponta.</li>
+      <li>No modo <b>2 Times</b>, o adversário pode apostar se o alvo está mais à esquerda ou à direita do pulso: se acertar (e o time não cravar o centro), ganha +1.</li>
+    </ol>
+    <div class="zones"><span style="color:#FFD60A">Centro: 4</span><span style="color:#00F5D4">Encosta interna: 3</span><span style="color:#38B000">Encosta externa: 2</span><span style="color:#FF3355">Fora: 0</span></div>
+    <p class="fine">2 Times: vence quem chegar a 10 pontos primeiro. Cooperativo: 8 rodadas para somar o máximo possível.</p>
+  </div>
+</div>
+
+<!-- FIM DE JOGO -->
+<div id="modalOver" class="overlay modal" data-show="over" hidden>
+  <div class="sheet center">
+    <h2 id="overTitle"></h2>
+    <p id="overText"></p>
+    <div id="overScore"></div>
+    <button id="btnAgain" class="btn primary">Nova Partida</button>
+    <button id="btnMenu" class="btn ghost">Menu</button>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="cards.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
