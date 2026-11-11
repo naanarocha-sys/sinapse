@@ -7,21 +7,46 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SINAPSE">
 <meta name="description" content="SINAPSE: party game de conexão neural para jogar passando o celular na mesa.">
 <title>SINAPSE</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body data-phase="home">
 
+<!-- Ícones (traço neon, herdam a cor do texto) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></symbol>
+  <symbol id="i-som" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" stroke="none"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+  <symbol id="i-mudo" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" stroke="none"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></symbol>
+  <symbol id="i-duelo" viewBox="0 0 24 24"><circle cx="4.5" cy="12" r="2.8"/><circle cx="19.5" cy="12" r="2.8"/><path d="M7.5 12h2l1.3-4 2.4 8 1.3-4h2"/></symbol>
+  <symbol id="i-grupo" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.6"/><circle cx="5" cy="18" r="2.6"/><circle cx="19" cy="18" r="2.6"/><path d="M10.7 7.3l-4.4 8.4M13.3 7.3l4.4 8.4M7.6 18h8.8"/></symbol>
+  <symbol id="i-cerebro" viewBox="0 0 24 24"><path d="M11 4.5a3 3 0 0 0-5 1.8A3 3 0 0 0 3.6 11a3 3 0 0 0 1.2 4.7A3.2 3.2 0 0 0 11 18.5zM13 4.5a3 3 0 0 1 5 1.8 3 3 0 0 1 2.4 4.7 3 3 0 0 1-1.2 4.7 3.2 3.2 0 0 1-6.2 2.8z"/><path d="M7 9.5c1 .2 1.8.9 2 2M17 9.5c-1 .2-1.8.9-2 2"/></symbol>
+  <symbol id="i-raio" viewBox="0 0 24 24"><path d="M13.5 2L4.5 13.5h6.5l-1 8.5 9-11.5h-6.5z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-trocar" viewBox="0 0 24 24"><path d="M19.5 10A8 8 0 0 0 5.6 6.4M4.5 14a8 8 0 0 0 13.9 3.6"/><path d="M5 2.8v4h4M19 21.2v-4h-4"/></symbol>
+  <symbol id="i-esq" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-dir" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-cadeado" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
+  <symbol id="i-instalar" viewBox="0 0 24 24"><path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5M5 19.5h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+</svg>
+
+<!-- Abertura -->
+<div id="splash" class="splash">
+  <svg class="splash-ico" viewBox="0 0 24 24"><use href="#i-cerebro"/></svg>
+  <div class="logo">SINAPSE</div>
+  <div class="bar"><i></i></div>
+</div>
+
 <div id="app">
   <header class="top">
-    <button id="btnHome" class="icon" aria-label="Voltar ao menu" title="Menu">☰</button>
+    <button id="btnHome" class="icon" aria-label="Voltar ao menu" title="Menu"><svg class="ic"><use href="#i-menu"/></svg></button>
     <div class="brand">SINAPSE</div>
     <div id="hud" class="hud"></div>
-    <button id="btnMute" class="icon" aria-label="Ligar ou desligar o som" title="Som">🔊</button>
+    <button id="btnMute" class="icon" aria-label="Ligar ou desligar o som" title="Som"></button>
   </header>
 
   <div id="banner" class="banner"></div>
@@ -34,8 +59,8 @@
   <div id="stage" class="stage"><canvas id="wave" aria-label="Onda neural entre dois cérebros"></canvas></div>
 
   <div class="poles">
-    <div class="pole left"><span>◀ 0%</span><b id="poleL"></b></div>
-    <div class="pole right"><span>100% ▶</span><b id="poleR"></b></div>
+    <div class="pole left"><span>0%</span><b id="poleL"></b></div>
+    <div class="pole right"><span>100%</span><b id="poleR"></b></div>
   </div>
 
   <p id="instr" class="instr"></p>
@@ -44,18 +69,18 @@
 
   <div class="controls">
     <button id="btnReveal" class="btn primary" data-show="guide" data-sfx="none" hidden>Revelar Frequência Alvo</button>
-    <div class="row" data-show="guide" hidden><button id="btnSwap" class="btn ghost small">↻ Trocar carta</button></div>
+    <div class="row" data-show="guide" hidden><button id="btnSwap" class="btn ghost small"><svg class="ic"><use href="#i-trocar"/></svg> Trocar carta</button></div>
     <button id="btnHide" class="btn primary" data-show="guideShown" data-sfx="none" hidden>Esconder Onda e Colocar na Mesa</button>
     <div class="nudge" data-show="team" hidden>
-      <button id="btnLeft" class="btn ghost" data-sfx="none" aria-label="Mover o pulso para a esquerda">◀</button>
+      <button id="btnLeft" class="btn ghost" data-sfx="none" aria-label="Mover o pulso para a esquerda"><svg class="ic"><use href="#i-esq"/></svg></button>
       <span>arraste o pulso na onda</span>
-      <button id="btnRight" class="btn ghost" data-sfx="none" aria-label="Mover o pulso para a direita">▶</button>
+      <button id="btnRight" class="btn ghost" data-sfx="none" aria-label="Mover o pulso para a direita"><svg class="ic"><use href="#i-dir"/></svg></button>
     </div>
     <div class="opp" data-show="team" data-only="teams" hidden>
       <p id="oppLabel"></p>
       <div class="row two">
-        <button class="btn opp-btn" data-opp="left" data-sfx="none">⚡ Palpite Adversário: Alvo está mais à ESQUERDA</button>
-        <button class="btn opp-btn" data-opp="right" data-sfx="none">⚡ Mais à DIREITA</button>
+        <button class="btn opp-btn" data-opp="left" data-sfx="none"><svg class="ic sm"><use href="#i-raio"/></svg> Palpite Adversário: Alvo está mais à ESQUERDA</button>
+        <button class="btn opp-btn" data-opp="right" data-sfx="none"><svg class="ic sm"><use href="#i-raio"/></svg> Mais à DIREITA</button>
       </div>
     </div>
     <button id="btnSync" class="btn primary pulse" data-show="team" data-sfx="none" hidden>Sincronizar (Revelar)</button>
@@ -66,15 +91,17 @@
 <!-- HOME -->
 <section id="home" class="overlay home" data-show="home">
   <div class="home-inner">
+    <svg class="home-ico" viewBox="0 0 24 24"><use href="#i-cerebro"/></svg>
     <h1 class="logo">SINAPSE</h1>
     <p class="tagline">Conecte mentes. Sintonize a frequência.</p>
     <div class="modes">
-      <button class="mode" data-pick="teams"><span class="ico">⚔️</span><b>2 Times</b><small>Disputa até 10 pontos</small></button>
-      <button class="mode" data-pick="coop"><span class="ico">🤝</span><b>Cooperativo</b><small>2+ jogadores · 8 rodadas</small></button>
+      <button class="mode" data-pick="teams"><svg class="ic lg"><use href="#i-duelo"/></svg><b>2 Times</b><small>Disputa até 10 pontos</small></button>
+      <button class="mode" data-pick="coop"><svg class="ic lg"><use href="#i-grupo"/></svg><b>Cooperativo</b><small>2+ jogadores · 8 rodadas</small></button>
     </div>
     <button id="btnStart" class="btn primary big">Iniciar Conexão</button>
     <button id="btnContinue" class="btn ghost" hidden>Continuar partida salva</button>
-    <button id="btnPremium" class="btn premium">🧠 Pacote Expansão Neural (+200 Cartas) - R$ 4,99</button>
+    <button id="btnPremium" class="btn premium"></button>
+    <button id="btnInstall" class="btn ghost" hidden><svg class="ic"><use href="#i-instalar"/></svg> Instalar como app</button>
     <button id="btnRules" class="link">Como jogar</button>
   </div>
 </section>

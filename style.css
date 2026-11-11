@@ -109,16 +109,30 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
   width: 100%; transition: transform .08s, box-shadow .2s, background .2s;
 }
 .btn:active { transform: scale(.97); }
+/* Botões "de jogo": relevo embaixo que afunda no toque + brilho que passa */
+.btn.primary, .btn.premium { position: relative; overflow: hidden; font-family: var(--titulo); }
 .btn.primary {
   text-transform: uppercase; color: #04101F;
   background: linear-gradient(135deg, #00F5D4, #4CC9F0 50%, #8A6BFF);
-  box-shadow: 0 0 18px rgba(0, 245, 212, .4), inset 0 1px 0 rgba(255, 255, 255, .55);
+  box-shadow: 0 5px 0 #1A5D86, 0 8px 20px rgba(0, 245, 212, .35), inset 0 2px 0 rgba(255, 255, 255, .6);
+}
+.btn.primary:active, .btn.premium:active { transform: translateY(4px); box-shadow: 0 1px 0 #1A5D86, 0 2px 10px rgba(0, 245, 212, .3), inset 0 2px 0 rgba(255, 255, 255, .5); }
+.btn.premium:active { box-shadow: 0 1px 0 #8A4B00, inset 0 2px 0 rgba(255, 255, 255, .5); }
+.btn.primary::after, .btn.premium::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .55) 50%, transparent 65%);
+  transform: translateX(-130%); animation: sheen 3.6s ease-in-out infinite;
 }
 .btn.big { font-size: 18px; padding: 16px; }
 .btn.ghost { background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: #CFE0FF; font-weight: 600; }
 .btn.small { width: auto; padding: 8px 14px; font-size: 13px; }
-.btn.premium { color: #2A1300; background: linear-gradient(135deg, #FFD60A, #FF9F1C); box-shadow: 0 0 18px rgba(255, 214, 10, .3); }
+.btn.premium {
+  color: #2A1300; background: linear-gradient(135deg, #FFE45C, #FFB703 55%, #FF8C1A);
+  box-shadow: 0 5px 0 #8A4B00, 0 8px 20px rgba(255, 183, 3, .3), inset 0 2px 0 rgba(255, 255, 255, .6);
+  display: flex; align-items: center; justify-content: center; gap: 8px; text-transform: uppercase; font-size: 14px;
+}
 .btn.pulse { animation: btnPulse 1.6s ease-in-out infinite; }
+.btn.ghost { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 
 .nudge { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--muted); letter-spacing: .06em; }
 .nudge .btn { width: 56px; padding: 9px 0; font-size: 16px; }
@@ -148,7 +162,8 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
   display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 14px 8px; border-radius: 16px;
   border: 1px solid var(--line); background: rgba(255, 255, 255, .03); transition: all .2s;
 }
-.mode .ico { font-size: 24px; }
+.mode .ic.lg { color: var(--cyan); filter: drop-shadow(0 0 6px rgba(0, 245, 212, .7)); margin-bottom: 2px; }
+.mode[data-pick="coop"] .ic.lg { color: var(--violet); filter: drop-shadow(0 0 6px rgba(199, 125, 255, .7)); }
 .mode b { font-size: 15px; }
 .mode small { font-size: 11px; color: var(--muted); }
 .mode.sel { border-color: var(--cyan); background: rgba(0, 245, 212, .08); box-shadow: 0 0 18px rgba(0, 245, 212, .3); }
@@ -196,7 +211,40 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
   50% { text-shadow: 0 0 2px #fff, 0 0 8px var(--cyan), 0 0 18px var(--cyan), 0 0 36px #7B5CFF; }
   93% { opacity: 1; } 95% { opacity: .55; } 97% { opacity: 1; }
 }
-@keyframes btnPulse { 50% { box-shadow: 0 0 34px rgba(0, 245, 212, .85), inset 0 1px 0 rgba(255, 255, 255, .55); } }
+@keyframes btnPulse { 50% { box-shadow: 0 5px 0 #1A5D86, 0 8px 34px rgba(0, 245, 212, .85), inset 0 2px 0 rgba(255, 255, 255, .6); } }
+@keyframes sheen { 0%, 55% { transform: translateX(-130%); } 80%, 100% { transform: translateX(130%); } }
+@keyframes fadeIn { from { opacity: 0; } }
+@keyframes zoomIn { from { opacity: 0; transform: scale(.94); } }
+@keyframes load { from { width: 0; } to { width: 100%; } }
+@keyframes float { 50% { transform: translateY(-6px); } }
+
+/* ---------- Cara de app ---------- */
+/* Fonte de títulos opcional: se existir fonts/Orbitron-VariableFont_wght.ttf, ela entra; senão fica a do sistema */
+@font-face { font-family: "SinapseTitulo"; src: url("fonts/Orbitron-VariableFont_wght.ttf") format("truetype"); font-weight: 400 900; font-display: swap; }
+:root { --titulo: "SinapseTitulo", "Segoe UI", Roboto, system-ui, sans-serif; }
+.logo, .brand, #cardTema, #resTitle, #overTitle, .sheet h2, .banner, .mode b { font-family: var(--titulo); }
+
+.ic { width: 20px; height: 20px; flex: none; display: inline-block; vertical-align: middle; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ic.sm { width: 14px; height: 14px; margin-top: -2px; }
+.ic.lg { width: 34px; height: 34px; stroke-width: 1.6; }
+.icon .ic { width: 22px; height: 22px; color: #CFE0FF; }
+.home-ico { width: 54px; height: 54px; margin: 0 auto -6px; fill: none; stroke: var(--cyan); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 10px var(--cyan)); animation: float 3s ease-in-out infinite; }
+
+.splash {
+  position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  background: radial-gradient(70% 45% at 50% 45%, #13205a, var(--bg) 75%); transition: opacity .45s ease;
+}
+.splash.out { opacity: 0; pointer-events: none; }
+.splash-ico { width: 72px; height: 72px; fill: none; stroke: var(--cyan); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 14px var(--cyan)); animation: float 2.4s ease-in-out infinite; }
+.splash .logo { font-size: clamp(38px, 12vw, 60px); }
+.splash .bar { width: 160px; height: 3px; border-radius: 3px; background: rgba(120, 160, 255, .18); overflow: hidden; }
+.splash .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--violet)); box-shadow: 0 0 10px var(--cyan); animation: load 1.1s ease-out forwards; }
+
+/* Transições entre telas/fases (rodam quando o elemento aparece) */
+.home:not([hidden]) { animation: fadeIn .35s ease-out; }
+.home:not([hidden]) .home-inner { animation: zoomIn .4s ease-out; }
+.modal:not([hidden]) { animation: fadeIn .25s ease-out; }
+.controls > :not([hidden]), .instr:not([hidden]) { animation: rise .35s ease-out; }
 @keyframes pop { 30% { transform: scale(1.25); } }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
 @keyframes flip { from { opacity: 0; transform: rotateX(70deg); } }
@@ -209,7 +257,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
   80% { transform: translate(2px, 0); }
   100% { transform: none; filter: none; }
 }
-@media (prefers-reduced-motion: reduce) { .logo, .btn.pulse { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .logo, .btn.pulse, .btn::after, .home-ico, .splash-ico { animation: none; } }
 @media (max-height: 640px) {
   #app { gap: 6px; }
   .card { padding: 6px 12px 8px; }

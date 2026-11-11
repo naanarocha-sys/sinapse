@@ -1,7 +1,8 @@
 # SINAPSE — servidor local simples (não precisa de Python nem Node).
 # Uso:  powershell -ExecutionPolicy Bypass -File servidor.ps1            (porta 8080)
 #       powershell -ExecutionPolicy Bypass -File servidor.ps1 -Porta 9000
-param([int]$Porta = 8080)
+#       powershell -ExecutionPolicy Bypass -File servidor.ps1 -Rede     (aceita o celular no mesmo Wi-Fi)
+param([int]$Porta = 8080, [switch]$Rede)
 
 $raiz = [IO.Path]::GetFullPath($PSScriptRoot)
 $tipos = @{
@@ -11,9 +12,18 @@ $tipos = @{
 }
 
 $http = [System.Net.HttpListener]::new()
-$http.Prefixes.Add("http://localhost:$Porta/")
-$http.Start()
+$http.Prefixes.Add($(if ($Rede) { "http://+:$Porta/" } else { "http://localhost:$Porta/" }))
+try { $http.Start() } catch {
+  Write-Host "Nao consegui abrir a porta $Porta. No modo -Rede, rode uma vez (PowerShell como administrador):"
+  Write-Host "  netsh http add urlacl url=http://+:$Porta/ user=$env:USERNAME"
+  exit 1
+}
 Write-Host "SINAPSE rodando em http://localhost:$Porta  (Ctrl+C para parar)"
+if ($Rede) {
+  Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+    Where-Object { $_.IPAddress -match '^(192\.168|10\.|172\.(1[6-9]|2\d|3[01]))' } |
+    ForEach-Object { Write-Host "No celular (mesmo Wi-Fi): http://$($_.IPAddress):$Porta" }
+}
 try {
   while ($http.IsListening) {
     $tarefa = $http.GetContextAsync()

@@ -98,7 +98,7 @@
     hud: $('#hud'), banner: $('#banner'), card: $('#card'), cardTema: $('#cardTema'), poleL: $('#poleL'), poleR: $('#poleR'),
     instr: $('#instr'), opp: $('.opp'), oppLabel: $('#oppLabel'), result: $('#result'), resTitle: $('#resTitle'),
     resPts: $('#resPts'), resOpp: $('#resOpp'), stage: $('#stage'), canvas: $('#wave'), btnNext: $('#btnNext'),
-    btnContinue: $('#btnContinue'), btnMute: $('#btnMute'), btnPremium: $('#btnPremium'), toast: $('#toast'),
+    btnContinue: $('#btnContinue'), btnMute: $('#btnMute'), btnPremium: $('#btnPremium'), btnInstall: $('#btnInstall'), toast: $('#toast'),
   };
 
   // ================= Áudio (Web Audio, sintetizado) =================
@@ -481,7 +481,7 @@
         ctx.fillStyle = '#fff';
         ctx.font = '700 12px system-ui, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('◀  ARRASTE  ▶', clamp(x, 50, view.W - 50), Math.max(16, y - 36));
+        ctx.fillText('‹  ARRASTE  ›', clamp(x, 50, view.W - 50), Math.max(16, y - 36));
         ctx.restore();
       }
     } else if ((phase === 'result' || phase === 'over') && round.result) {
@@ -661,6 +661,7 @@
     game.roundDone = false;
     saveGame();
     setPhase('guide');
+    els.card.classList.remove('flip'); void els.card.offsetWidth; els.card.classList.add('flip');
   }
   function nextRound() {
     if (checkOver()) { showOver(); return; }
@@ -774,7 +775,7 @@
     let extra = '';
     if (teams && r.oppPick) {
       const opp = TEAM[1 - game.turn].name;
-      extra = r.opp ? `⚡ +1 de Interferência para o ${opp}` : r.pts === 4 ? `⚡ A sincronia perfeita anulou a interferência do ${opp}` : `⚡ A interferência do ${opp} errou o lado`;
+      extra = r.opp ? `+1 de Interferência para o ${opp}` : r.pts === 4 ? `A sincronia perfeita anulou a interferência do ${opp}` : `A interferência do ${opp} errou o lado`;
     }
     if (r.tie) extra += (extra ? ' · ' : '') + 'Empate na meta: rodada extra!';
     els.resOpp.textContent = extra;
@@ -822,7 +823,7 @@
           instr = 'Só a Mente Brilhante olha a tela agora. Toque abaixo para revelar onde está o alvo.';
           break;
         case 'guideShown':
-          banner = `🧠 Mente Brilhante${teams ? ' do ' + cur.name : ''}: memorize o alvo`;
+          banner = `Mente Brilhante${teams ? ' do ' + cur.name : ''}: memorize o alvo`;
           instr = 'Pense em uma dica verbal que represente essa posição na onda (sem falar números!). Diga a dica em voz alta e clique abaixo.';
           break;
         case 'team':
@@ -858,12 +859,15 @@
   function renderHome() {
     $$('[data-pick]').forEach((b) => b.classList.toggle('sel', b.dataset.pick === settings.mode));
     els.btnContinue.hidden = !savedGame();
-    els.btnPremium.textContent = settings.isPremiumUnlocked ? '✓ Pacote Expansão Neural ativo' : '🧠 Pacote Expansão Neural (+200 Cartas) - R$ 4,99';
+    els.btnPremium.innerHTML = settings.isPremiumUnlocked
+      ? `${ico('i-check')} Pacote Expansão Neural ativo`
+      : `${ico('i-cerebro')} Pacote Expansão Neural (+200 Cartas) - R$ 4,99`;
+    els.btnInstall.hidden = !installEvt;
   }
   function openPremium() {
     const open = settings.isPremiumUnlocked;
     $('#premiumPreview').innerHTML = PREMIUM_CARDS.slice(0, 6).map((c) =>
-      `<div class="pcard${open ? ' open' : ''}"><b>${esc(c.tema)}</b><span>${open ? esc(c.poloEsquerdo) + ' ↔ ' + esc(c.poloDireito) : '🔒 polos bloqueados'}</span></div>`).join('');
+      `<div class="pcard${open ? ' open' : ''}"><b>${esc(c.tema)}</b><span>${open ? esc(c.poloEsquerdo) + ' ↔ ' + esc(c.poloDireito) : ico('i-cadeado', 'sm') + ' polos bloqueados'}</span></div>`).join('');
     $('#premiumStatus').textContent = open ? `✓ Pacote ativo: ${PREMIUM_CARDS.length} cartas extras no baralho.` : 'Prévia das cartas bloqueadas';
     $('#btnBuy').hidden = open;
     $('#btnUnlockTest').textContent = open ? 'Bloquear de novo (teste)' : 'Desbloquear (modo teste)';
@@ -885,7 +889,20 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { els.toast.hidden = true; }, 2600);
   }
-  function renderMute() { els.btnMute.textContent = settings.muted ? '🔇' : '🔊'; }
+  function renderMute() { els.btnMute.innerHTML = ico(settings.muted ? 'i-mudo' : 'i-som'); }
+  function ico(id, cls = '') { return `<svg class="ic ${cls}"><use href="#${id}"/></svg>`; }
+
+  // Botão "Instalar como app" (Chrome/Android oferece o evento quando o app ainda não está instalado)
+  let installEvt = null;
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; if (phase === 'home') renderHome(); });
+  window.addEventListener('appinstalled', () => { installEvt = null; toast('SINAPSE instalado! Procure o ícone na tela inicial.'); renderHome(); });
+  async function installApp() {
+    if (!installEvt) return;
+    installEvt.prompt();
+    try { await installEvt.userChoice; } catch (e) { /* cancelado */ }
+    installEvt = null;
+    renderHome();
+  }
 
   // ================= Ligações =================
   $('#btnStart').onclick = () => startGame(settings.mode);
@@ -915,8 +932,11 @@
   document.addEventListener('pointerdown', () => audio.init(), true); // áudio só liga após um toque
   document.addEventListener('click', (e) => {
     const b = e.target.closest('button');
-    if (b && b.dataset.sfx !== 'none') audio.click();
+    if (!b) return;
+    if (b.dataset.sfx !== 'none') audio.click();
+    buzz(8); // toque "físico" curto em todo botão
   });
+  els.btnInstall.onclick = installApp;
   window.addEventListener('keydown', (e) => {
     if (phase !== 'team') return;
     if (e.key === 'ArrowLeft') nudge(e.shiftKey ? -5 : -1);
@@ -930,6 +950,8 @@
   renderMute();
   setPhase('home');
   requestAnimationFrame(loop);
+  const splash = $('#splash'); // abertura: some depois da barrinha encher
+  setTimeout(() => { splash.classList.add('out'); setTimeout(() => splash.remove(), 500); }, 1200);
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

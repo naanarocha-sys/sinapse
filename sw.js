@@ -1,7 +1,8 @@
 // SINAPSE — service worker: guarda o app para rodar offline.
 // Ao publicar uma versão nova, troque o número do CACHE.
-const CACHE = 'sinapse-v1';
-const ASSETS = ['./', './index.html', './style.css', './app.js', './cards.js', './manifest.webmanifest', './icon.svg'];
+const CACHE = 'sinapse-v2';
+const ASSETS = ['./', './index.html', './style.css', './app.js', './cards.js', './manifest.webmanifest', './icon.svg',
+  './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
