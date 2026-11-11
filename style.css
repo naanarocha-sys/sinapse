@@ -72,7 +72,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
   position: relative; flex: 1 1 auto; min-height: 150px; border-radius: 18px; overflow: hidden;
   border: 1px solid var(--line);
   background:
-    radial-gradient(60% 70% at 50% 50%, rgba(217, 4, 41, .08), transparent 70%),
+    radial-gradient(60% 70% at 50% 50%, rgba(47, 123, 255, .1), transparent 70%),
     linear-gradient(rgba(120, 160, 255, .05) 1px, transparent 1px) 0 0 / 100% 24px,
     linear-gradient(90deg, rgba(120, 160, 255, .05) 1px, transparent 1px) 0 0 / 24px 100%,
     rgba(5, 8, 22, .6);
@@ -95,9 +95,9 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
 #resTitle { font-size: clamp(20px, 6vw, 30px); font-weight: 900; letter-spacing: .06em; }
 #resPts { font-size: 15px; font-weight: 700; margin-top: 2px; }
 #resOpp { font-size: 13px; color: var(--muted); margin-top: 4px; }
-.r4 #resTitle { color: var(--yellow); text-shadow: 0 0 14px rgba(255, 214, 10, .9), 0 0 30px rgba(0, 245, 212, .6); }
-.r3 #resTitle { color: var(--cyan); text-shadow: 0 0 14px rgba(0, 245, 212, .8); }
-.r2 #resTitle { color: #7CDB4A; text-shadow: 0 0 12px rgba(56, 176, 0, .8); }
+.r4 #resTitle { color: #39FF6A; text-shadow: 0 0 14px rgba(57, 255, 106, .9), 0 0 30px rgba(57, 255, 106, .5); }
+.r3 #resTitle { color: var(--yellow); text-shadow: 0 0 14px rgba(255, 214, 10, .8); }
+.r2 #resTitle { color: #FF9F1C; text-shadow: 0 0 12px rgba(255, 159, 28, .8); }
 .r0 #resTitle { color: #FF3355; text-shadow: 0 0 14px rgba(217, 4, 41, .9); animation: flicker .5s steps(2) 3; }
 
 /* ---------- Botões ---------- */

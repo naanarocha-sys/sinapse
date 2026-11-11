@@ -15,8 +15,8 @@
   // verde neon até 7 (+5% de cada lado), verde médio até 12 (+5% de cada lado).
   const ZONE = [2, 7, 12];
   const COL = {
-    zone: ['#D90429', '#38B000', '#00F5D4', '#FFD60A'], // 0 base (sem conexão), 1 encosta externa, 2 encosta interna, 3 centro
-    baseGlow: '#8B0000',
+    zone: ['#2F7BFF', '#FF9F1C', '#FFD60A', '#39FF6A'], // 0 base azul, 1 encosta externa (âmbar, 2), 2 encosta interna (amarelo, 3), 3 centro (verde, 4)
+    baseGlow: '#0B2C8C',
     brainL: '#3DDCFF',
     brainR: '#C77DFF',
   };
@@ -281,8 +281,10 @@
   function waveY(x, v, bumps) {
     const H = view.A, t = fx.t;
     let amp = H * 0.07, harm = 0;
-    for (const b of bumps) {
-      const g = Math.exp(-(((v - b.c) / 9) ** 2)) * b.a;
+    for (const b of bumps) { // o pulso só existe dentro do trecho colorido (±12); fora dele a onda segue normal
+      const d = Math.abs(v - b.c);
+      if (d >= ZONE[2]) continue;
+      const g = (0.5 + 0.5 * Math.cos((Math.PI * d) / ZONE[2])) * b.a;
       amp += H * 0.2 * g;
       harm += g;
     }
@@ -300,26 +302,7 @@
     return d <= ZONE[0] * k ? 3 : d <= ZONE[1] * k ? 2 : d <= ZONE[2] * k ? 1 : 0;
   }
 
-  // Colunas de brilho atrás das faixas de pontuação (limitadas a [0,100], sem wrap)
-  function drawZoneColumns(sc) {
-    if (sc.zc == null || sc.zs <= 0.01) return;
-    ctx.save();
-    for (let z = 2; z >= 0; z--) {
-      const w = ZONE[z] * sc.zs;
-      const a = vx(clamp(sc.zc - w, 0, 100)), b = vx(clamp(sc.zc + w, 0, 100));
-      const g = ctx.createLinearGradient(0, 0, 0, view.H);
-      const col = COL.zone[3 - z], alpha = [0.16, 0.1, 0.07][z];
-      g.addColorStop(0, hexA(col, 0));
-      g.addColorStop(0.5, hexA(col, alpha));
-      g.addColorStop(1, hexA(col, 0));
-      ctx.fillStyle = g;
-      ctx.fillRect(a, 0, b - a, view.H);
-    }
-    ctx.restore();
-  }
-
   function drawWave(sc) {
-    drawZoneColumns(sc);
     const span = view.x1 - view.x0;
     const n = Math.max(20, Math.ceil(span / 1.5));
     const P = new Array(n + 1);
@@ -361,7 +344,7 @@
       ctx.shadowColor = COL.zone[c];
       ctx.shadowBlur = c ? 14 : 0;
       path(a, b); ctx.stroke();
-      if (c === 3) { ctx.strokeStyle = '#FFFBE0'; ctx.lineWidth = 1.2; ctx.shadowBlur = 0; path(a, b); ctx.stroke(); }
+      if (c === 3) { ctx.strokeStyle = '#EFFFF2'; ctx.lineWidth = 1.2; ctx.shadowBlur = 0; path(a, b); ctx.stroke(); }
     }
     ctx.restore();
   }
@@ -691,7 +674,7 @@
     audio.reveal();
     buzz(25);
     setPhase('guideShown');
-    burst(vx(round.targetX), view.cy, 26, ['#FFD60A', '#00F5D4'], 200);
+    burst(vx(round.targetX), view.cy, 26, ['#39FF6A', '#FFD60A'], 200);
   }
   function hideTarget() {
     round.guessX = 50; round.oppPick = null; round.touched = false;
@@ -741,18 +724,18 @@
     fx.zoneT0 = fx.t;
     const x = vx(round.guessX), y = view.cy;
     if (r.pts === 4) {
-      burst(x, y, 170, ['#FFD60A', '#00F5D4', '#FFFFFF', '#FFE66D'], 420);
-      ring(x, y, '#FFD60A'); ring(x, y, '#00F5D4', 0.15);
-      fx.flash = 1; fx.flashColor = '#FFD60A'; fx.bolt = 0.7;
+      burst(x, y, 170, ['#39FF6A', '#B6FFC8', '#FFFFFF', '#00F5D4'], 420);
+      ring(x, y, '#39FF6A'); ring(x, y, '#FFFFFF', 0.15);
+      fx.flash = 1; fx.flashColor = '#39FF6A'; fx.bolt = 0.7;
       buzz([80, 40, 160]);
     } else if (r.pts === 3) {
-      burst(x, y, 100, ['#00F5D4', '#7CFFCB', '#38B000'], 320);
-      ring(x, y, '#00F5D4');
-      fx.flash = 0.6; fx.flashColor = '#00F5D4'; fx.bolt = 0.45;
+      burst(x, y, 100, ['#FFD60A', '#FFE66D', '#FFF3B0'], 320);
+      ring(x, y, '#FFD60A');
+      fx.flash = 0.6; fx.flashColor = '#FFD60A'; fx.bolt = 0.45;
       buzz(70);
     } else if (r.pts === 2) {
-      burst(x, y, 55, ['#38B000', '#9EF01A'], 230);
-      fx.flash = 0.3; fx.flashColor = '#38B000';
+      burst(x, y, 55, ['#FF9F1C', '#FFC15E'], 230);
+      fx.flash = 0.3; fx.flashColor = '#FF9F1C';
       buzz(50);
     } else {
       burst(x, y, 70, ['#FF2E2E', '#D90429', '#FF8C42'], 280);
