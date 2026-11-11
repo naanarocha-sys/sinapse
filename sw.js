@@ -1,6 +1,6 @@
 // SINAPSE — service worker: guarda o app para rodar offline.
 // Ao publicar uma versão nova, troque o número do CACHE.
-const CACHE = 'sinapse-v2';
+const CACHE = 'sinapse-v3';
 const ASSETS = ['./', './index.html', './style.css', './app.js', './cards.js', './manifest.webmanifest', './icon.svg',
   './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 

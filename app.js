@@ -11,19 +11,19 @@
     { name: 'Time Rosa', short: 'Rosa', color: '#F72585' },
   ];
   const COOP_COLOR = '#00F5D4';
-  // Zonas do pulso, em % do eixo (distância ao centro): amarelo ±2 (4% de largura),
-  // verde neon até 7 (+5% de cada lado), verde médio até 12 (+5% de cada lado).
-  const ZONE = [2, 7, 12];
+  // Pulso do time, em % do eixo (distância ao centro): centro verde ±3 (6% de largura) = 4 pontos;
+  // braços amarelos até ±11 (+8% de cada lado) = 2 pontos. O alvo é um ponto (a sinapse rompida).
+  const ZONE = [3, 11];
+  const Z_OUT = ZONE[ZONE.length - 1];
   const COL = {
-    zone: ['#2F7BFF', '#FF9F1C', '#FFD60A', '#39FF6A'], // 0 base azul, 1 encosta externa (âmbar, 2), 2 encosta interna (amarelo, 3), 3 centro (verde, 4)
+    zone: ['#2F7BFF', '#FFD60A', '#39FF6A'], // 0 base azul, 1 braços (amarelo, 2), 2 centro (verde, 4)
     baseGlow: '#0B2C8C',
     brainL: '#3DDCFF',
     brainR: '#C77DFF',
   };
   const RESULT_TXT = {
-    4: ['SINCRONIA MENTAL PERFEITA!', 'r4'],
-    3: ['CONEXÃO FORTE!', 'r3'],
-    2: ['SINAPSE PARCIAL', 'r2'],
+    4: ['SINAPSE RESTABELECIDA!', 'r4'],
+    2: ['CONEXÃO PARCIAL', 'r2'],
     0: ['CURTO-CIRCUITO!', 'r0'],
   };
   const COOP_TIERS = [
@@ -261,21 +261,24 @@
   };
 
   // ================= Canvas: a onda =================
-  // Que pulso (zonas coloridas) e que "calombos" de amplitude a onda tem em cada fase.
+  // Em cada fase: o pulso do time (zonas coloridas + "calombo") e a sinapse rompida (gap = alvo).
   function scene() {
     const zs = easeOutBack(clamp((fx.t - fx.zoneT0) / 0.5, 0, 1));
+    const none = { bumps: [], zc: null, zs: 0, gap: null, gs: 0 };
     switch (phase) {
-      case 'home': { const c = 50 + 38 * Math.sin(fx.t * 0.45); return { bumps: [{ c, a: 1 }], zc: c, zs: 1 }; }
-      case 'guideShown': return { bumps: [{ c: round.targetX, a: zs }], zc: round.targetX, zs };
+      case 'home': { const c = 50 + 38 * Math.sin(fx.t * 0.45); return { ...none, bumps: [{ c, a: 1 }], zc: c, zs: 1 }; }
+      case 'guideShown': return { ...none, gap: round.targetX, gs: zs };
       case 'team':
-      case 'suspense': return { bumps: [{ c: round.guessX, a: 1 }], zc: round.guessX, zs: 1 };
+      case 'suspense': return { ...none, bumps: [{ c: round.guessX, a: 1 }], zc: round.guessX, zs: 1 };
       case 'result':
       case 'over':
-        if (round.result) return { bumps: [{ c: round.targetX, a: zs }, { c: round.guessX, a: 0.35 }], zc: round.targetX, zs };
-        return { bumps: [], zc: null, zs: 0 };
-      default: return { bumps: [], zc: null, zs: 0 };
+        if (round.result) return { bumps: [{ c: round.guessX, a: 1 }], zc: round.guessX, zs: 1, gap: round.targetX, gs: 1 };
+        return none;
+      default: return none;
     }
   }
+  const gapHalf = (gs) => Math.max(1.8, (13 / Math.max(40, view.x1 - view.x0)) * 100) * gs; // meia largura do rompido
+  let curGap = null; // { c, h }: a onda "assenta" no eixo perto do rompido para os terminais ficarem frente a frente
 
   // y da onda no pixel x (v = mesma posição em 0..100). O pulso só existe dentro de [0,100]: sem wrap-around.
   function waveY(x, v, bumps) {
@@ -283,8 +286,8 @@
     let amp = H * 0.07, harm = 0;
     for (const b of bumps) { // o pulso só existe dentro do trecho colorido (±12); fora dele a onda segue normal
       const d = Math.abs(v - b.c);
-      if (d >= ZONE[2]) continue;
-      const g = (0.5 + 0.5 * Math.cos((Math.PI * d) / ZONE[2])) * b.a;
+      if (d >= Z_OUT) continue;
+      const g = (0.5 + 0.5 * Math.cos((Math.PI * d) / Z_OUT)) * b.a;
       amp += H * 0.2 * g;
       harm += g;
     }
@@ -292,23 +295,26 @@
     y += Math.sin(x * view.k * 2.3 - t * 5.2) * H * 0.05 * harm; // "pacote de impulso" mais elétrico
     if (fx.dragE > 0.01) y += Math.sin(x * view.k * 5 - t * 18) * H * 0.07 * fx.dragE * Math.exp(-(((v - round.guessX) / 7) ** 2));
     if (fx.shake > 0) y += (Math.random() - 0.5) * H * 0.12 * fx.shake;
+    if (curGap) y *= 0.04 + 0.96 * smooth((Math.abs(v - curGap.c) - curGap.h) / (curGap.h * 1.4));
     return view.cy + y * smooth(v / 3) * smooth((100 - v) / 3); // presa nos terminais dos cérebros
   }
 
-  // 0 = vermelho (sem conexão), 1 = verde médio (2 pts), 2 = verde neon (3 pts), 3 = amarelo (4 pts)
+  // -1 = rompido (não desenha), 0 = azul, 1 = braço amarelo (2 pts), 2 = centro verde (4 pts)
   function zoneIdx(v, c, s) {
     if (c == null) return 0;
     const d = Math.abs(v - c), k = Math.max(s, 0.001);
-    return d <= ZONE[0] * k ? 3 : d <= ZONE[1] * k ? 2 : d <= ZONE[2] * k ? 1 : 0;
+    return d <= ZONE[0] * k ? 2 : d <= ZONE[1] * k ? 1 : 0;
   }
 
   function drawWave(sc) {
     const span = view.x1 - view.x0;
     const n = Math.max(20, Math.ceil(span / 1.5));
     const P = new Array(n + 1);
+    const gh = sc.gap == null ? 0 : gapHalf(sc.gs);
     for (let i = 0; i <= n; i++) {
       const v = (i / n) * 100, x = view.x0 + (span * i) / n;
-      P[i] = [x, waveY(x, v, sc.bumps), zoneIdx(v, sc.zc, sc.zs)];
+      const inGap = gh > 0 && Math.abs(v - sc.gap) < gh;
+      P[i] = [x, waveY(x, v, sc.bumps), inGap ? -1 : zoneIdx(v, sc.zc, sc.zs)];
     }
     // eco espelhado (bainha do axônio)
     ctx.save();
@@ -316,7 +322,10 @@
     ctx.strokeStyle = COL.zone[0];
     ctx.lineWidth = 1;
     ctx.beginPath();
-    for (let i = 0; i <= n; i++) { const y = view.cy - (P[i][1] - view.cy) * 0.6; i ? ctx.lineTo(P[i][0], y) : ctx.moveTo(P[i][0], y); }
+    for (let i = 0; i <= n; i++) {
+      const y = view.cy - (P[i][1] - view.cy) * 0.6;
+      if (i && P[i][2] !== -1 && P[i - 1][2] !== -1) ctx.lineTo(P[i][0], y); else ctx.moveTo(P[i][0], y);
+    }
     ctx.stroke();
     ctx.restore();
 
@@ -331,21 +340,77 @@
     ctx.lineJoin = 'round';
     ctx.globalCompositeOperation = 'lighter'; // brilho largo
     for (const [a, b, c] of runs) {
+      if (c < 0) continue; // rompido
       ctx.strokeStyle = c ? COL.zone[c] : COL.baseGlow;
       ctx.globalAlpha = c ? 0.33 : 0.55;
-      ctx.lineWidth = c === 3 ? 14 : c ? 10 : 8;
+      ctx.lineWidth = c === 2 ? 14 : c ? 10 : 8;
       path(a, b); ctx.stroke();
     }
     ctx.globalCompositeOperation = 'source-over'; // núcleo
     ctx.globalAlpha = 1;
     for (const [a, b, c] of runs) {
+      if (c < 0) continue;
       ctx.strokeStyle = COL.zone[c];
       ctx.lineWidth = c ? 3.4 : 2.4;
       ctx.shadowColor = COL.zone[c];
       ctx.shadowBlur = c ? 14 : 0;
       path(a, b); ctx.stroke();
-      if (c === 3) { ctx.strokeStyle = '#EFFFF2'; ctx.lineWidth = 1.2; ctx.shadowBlur = 0; path(a, b); ctx.stroke(); }
+      if (c === 2) { ctx.strokeStyle = '#EFFFF2'; ctx.lineWidth = 1.2; ctx.shadowBlur = 0; path(a, b); ctx.stroke(); }
     }
+    ctx.restore();
+  }
+
+  // ================= Canvas: a sinapse rompida (alvo) =================
+  // Dois terminais frente a frente no ponto rompido. Faíscas fracas = sem conexão;
+  // no resultado: ponte verde (4 pts, restabelecida), ponte amarela piscando (2 pts), faíscas vermelhas (0).
+  function drawSynapse(sc) {
+    if (sc.gap == null || sc.gs <= 0.01) return;
+    const gh = gapHalf(sc.gs);
+    const va = clamp(sc.gap - gh, 0, 100), vb = clamp(sc.gap + gh, 0, 100);
+    const xa = vx(va), xb = vx(vb);
+    const ya = waveY(xa, va, sc.bumps), yb = waveY(xb, vb, sc.bumps);
+    const pts = round.result && (phase === 'result' || phase === 'over') ? round.result.pts : null;
+    const col = pts === 4 ? COL.zone[2] : pts === 2 ? COL.zone[1] : pts === 0 ? '#FF2E4D' : '#9FD4FF';
+    ctx.save();
+    ctx.lineCap = 'round';
+    // ponte / faíscas entre os terminais
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 12;
+    if (pts === 4 || (pts === 2 && Math.random() < 0.55)) {
+      ctx.globalAlpha = pts === 4 ? 0.95 : 0.7;
+      ctx.lineWidth = pts === 4 ? 4 : 2.5;
+      ctx.beginPath(); ctx.moveTo(xa, ya); ctx.lineTo(xb, yb); ctx.stroke();
+    } else if (Math.random() < 0.7) {
+      ctx.globalAlpha = pts === 0 ? 0.9 : 0.6;
+      ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.moveTo(xa, ya);
+      for (let i = 1; i < 4; i++) {
+        const u = i / 4;
+        ctx.lineTo(xa + (xb - xa) * u, ya + (yb - ya) * u + (Math.random() - 0.5) * 14);
+      }
+      ctx.lineTo(xb, yb); ctx.stroke();
+    }
+    // terminais (botões sinápticos) com vesículas
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    const knob = (x, y, dir) => {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 22);
+      g.addColorStop(0, hexA(col, 0.6)); g.addColorStop(1, hexA(col, 0));
+      ctx.fillStyle = g; ctx.shadowBlur = 0;
+      ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI * 2); ctx.fill();
+      // botão sináptico: meia-lua virada para o vão
+      ctx.fillStyle = '#0B1640'; ctx.strokeStyle = col; ctx.lineWidth = 2.2; ctx.shadowColor = col; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.ellipse(x, y, 6, 8.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.shadowBlur = 6;
+      for (let i = 0; i < 4; i++) { // vesículas pulsando em direção ao vão
+        const a = fx.t * 3 + i * 1.7;
+        ctx.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(a));
+        ctx.beginPath(); ctx.arc(x + dir * (1 + (i % 2) * 2), y + (i - 1.5) * 3, 1.3, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    };
+    knob(xa, ya, 1);
+    knob(xb, yb, -1);
     ctx.restore();
   }
 
@@ -432,17 +497,15 @@
     const x = vx(v), y = waveY(x, v, bumps), p = 1 + 0.18 * Math.sin(fx.t * 6);
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    const g = ctx.createRadialGradient(x, y, 0, x, y, 28 * p);
-    g.addColorStop(0, hexA(color, 0.55));
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 14 * p);
+    g.addColorStop(0, hexA(color, 0.35));
     g.addColorStop(1, hexA(color, 0));
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x, y, 28 * p, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, 14 * p, 0, Math.PI * 2); ctx.fill();
     ctx.globalCompositeOperation = 'source-over';
-    ctx.shadowColor = color; ctx.shadowBlur = 14;
+    ctx.shadowColor = color; ctx.shadowBlur = 10;
     ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(x, y, 5.5, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(x, y, 10 * p, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill(); // miolo pequeno: não cobre o centro verde
     ctx.restore();
     return [x, y];
   }
@@ -456,6 +519,7 @@
   }
   function drawMarkers(sc) {
     const col = teamColor();
+    if (phase === 'guideShown') label('▼ ALVO: SINAPSE ROMPIDA', vx(round.targetX), 13, '#9FD4FF');
     if (phase === 'team' || phase === 'suspense') {
       const [x, y] = node(round.guessX, sc.bumps, col);
       if (phase === 'team' && !round.touched) {
@@ -475,9 +539,8 @@
       ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(gx, 24); ctx.lineTo(gx, view.H - 20); ctx.stroke();
       ctx.restore();
-      label('▼ ALVO', vx(round.targetX), 13, COL.zone[3]);
+      label('▼ ALVO', vx(round.targetX), 13, '#9FD4FF');
       label('PALPITE', gx, view.H - 10, col);
-      node(round.guessX, sc.bumps, col);
     }
   }
   function drawBolts(sc) { // raios do palpite até os dois cérebros (3 e 4 pontos)
@@ -557,7 +620,9 @@
     if (fx.glitch > 0) ctx.translate((Math.random() - 0.5) * 16 * fx.glitch, (Math.random() - 0.5) * 10 * fx.glitch);
     drawDust();
     const sc = scene();
+    curGap = sc.gap == null || sc.gs <= 0.01 ? null : { c: sc.gap, h: gapHalf(sc.gs) };
     drawWave(sc);
+    drawSynapse(sc);
     const glow = brainGlow();
     drawBrain(view.bxL, 1, COL.brainL, glow);
     drawBrain(view.bxR, -1, COL.brainR, glow);
@@ -674,7 +739,7 @@
     audio.reveal();
     buzz(25);
     setPhase('guideShown');
-    burst(vx(round.targetX), view.cy, 26, ['#39FF6A', '#FFD60A'], 200);
+    burst(vx(round.targetX), view.cy, 26, ['#9FD4FF', '#FFFFFF'], 200);
   }
   function hideTarget() {
     round.guessX = 50; round.oppPick = null; round.touched = false;
@@ -692,7 +757,8 @@
     setPhase('suspense');
     setTimeout(revealResult, 1000);
   }
-  const scoreFor = (d) => (d <= ZONE[0] ? 4 : d <= ZONE[1] ? 3 : d <= ZONE[2] ? 2 : 0);
+  // O alvo (ponto rompido) caiu no centro verde do pulso = 4; num braço amarelo = 2; fora = 0.
+  const scoreFor = (d) => (d <= ZONE[0] ? 4 : d <= ZONE[1] ? 2 : 0);
   function checkOver() {
     if (!game) return false;
     if (game.mode === 'teams') { const [a, b] = game.scores; return Math.max(a, b) >= WIN_SCORE && a !== b; }
@@ -728,15 +794,11 @@
       ring(x, y, '#39FF6A'); ring(x, y, '#FFFFFF', 0.15);
       fx.flash = 1; fx.flashColor = '#39FF6A'; fx.bolt = 0.7;
       buzz([80, 40, 160]);
-    } else if (r.pts === 3) {
-      burst(x, y, 100, ['#FFD60A', '#FFE66D', '#FFF3B0'], 320);
-      ring(x, y, '#FFD60A');
-      fx.flash = 0.6; fx.flashColor = '#FFD60A'; fx.bolt = 0.45;
-      buzz(70);
     } else if (r.pts === 2) {
-      burst(x, y, 55, ['#FF9F1C', '#FFC15E'], 230);
-      fx.flash = 0.3; fx.flashColor = '#FF9F1C';
-      buzz(50);
+      burst(x, y, 80, ['#FFD60A', '#FFE66D', '#FFF3B0'], 280);
+      ring(x, y, '#FFD60A');
+      fx.flash = 0.5; fx.flashColor = '#FFD60A';
+      buzz(60);
     } else {
       burst(x, y, 70, ['#FF2E2E', '#D90429', '#FF8C42'], 280);
       fx.glitch = 0.7; fx.shake = 0.8;

@@ -97,7 +97,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
 #resOpp { font-size: 13px; color: var(--muted); margin-top: 4px; }
 .r4 #resTitle { color: #39FF6A; text-shadow: 0 0 14px rgba(57, 255, 106, .9), 0 0 30px rgba(57, 255, 106, .5); }
 .r3 #resTitle { color: var(--yellow); text-shadow: 0 0 14px rgba(255, 214, 10, .8); }
-.r2 #resTitle { color: #FF9F1C; text-shadow: 0 0 12px rgba(255, 159, 28, .8); }
+.r2 #resTitle { color: var(--yellow); text-shadow: 0 0 12px rgba(255, 214, 10, .8); }
 .r0 #resTitle { color: #FF3355; text-shadow: 0 0 14px rgba(217, 4, 41, .9); animation: flicker .5s steps(2) 3; }
 
 /* ---------- Botões ---------- */
