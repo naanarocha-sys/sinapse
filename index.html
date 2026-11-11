@@ -13,6 +13,9 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body data-phase="home">
@@ -41,31 +44,41 @@
   <div class="bar"><i></i></div>
 </div>
 
+<!-- Aviso de rotação (só celular em pé) -->
+<div class="rotate" aria-live="polite">
+  <svg class="rotate-ico" viewBox="0 0 48 48"><rect x="15" y="6" width="18" height="34" rx="3.5"/><path d="M22 35h4"/></svg>
+  <p>Gire o celular na horizontal para sincronizar os cérebros</p>
+</div>
+
 <div id="app">
-  <header class="top">
-    <button id="btnHome" class="icon" aria-label="Voltar ao menu" title="Menu"><svg class="ic"><use href="#i-menu"/></svg></button>
-    <div class="brand">SINAPSE</div>
-    <div id="hud" class="hud"></div>
-    <button id="btnMute" class="icon" aria-label="Ligar ou desligar o som" title="Som"></button>
+  <header class="hudbar">
+    <div class="hud-side left">
+      <button id="btnHome" class="icon" aria-label="Voltar ao menu" title="Menu"><svg class="ic"><use href="#i-menu"/></svg></button>
+      <div id="hudL" class="hud-slot"></div>
+    </div>
+    <div id="card" class="card">
+      <span class="card-label">TEMA DA RODADA</span>
+      <h2 id="cardTema">—</h2>
+    </div>
+    <div class="hud-side right">
+      <div id="hudR" class="hud-slot"></div>
+      <button id="btnMute" class="icon" aria-label="Ligar ou desligar o som" title="Som"></button>
+    </div>
   </header>
 
   <div id="banner" class="banner"></div>
 
-  <div id="card" class="card">
-    <span class="card-label">TEMA DA RODADA</span>
-    <h2 id="cardTema">—</h2>
+  <div id="stage" class="stage">
+    <canvas id="wave" aria-label="Onda neural entre dois cérebros"></canvas>
+    <div id="poleBoxL" class="pole left"><span>0%</span><b id="poleL"></b></div>
+    <div id="poleBoxR" class="pole right"><span>100%</span><b id="poleR"></b></div>
   </div>
 
-  <div id="stage" class="stage"><canvas id="wave" aria-label="Onda neural entre dois cérebros"></canvas></div>
-
-  <div class="poles">
-    <div class="pole left"><span>0%</span><b id="poleL"></b></div>
-    <div class="pole right"><span>100%</span><b id="poleR"></b></div>
+  <footer class="foot">
+  <div class="foot-info">
+    <p id="instr" class="instr"></p>
+    <div id="result" class="result" data-show="result" hidden><div id="resTitle"></div><div id="resPts"></div><div id="resOpp"></div></div>
   </div>
-
-  <p id="instr" class="instr"></p>
-
-  <div id="result" class="result" data-show="result" hidden><div id="resTitle"></div><div id="resPts"></div><div id="resOpp"></div></div>
 
   <div class="controls">
     <button id="btnReveal" class="btn primary" data-show="guide" data-sfx="none" hidden>Revelar Frequência Alvo</button>
@@ -79,21 +92,25 @@
     <div class="opp" data-show="team" data-only="teams" hidden>
       <p id="oppLabel"></p>
       <div class="row two">
-        <button class="btn opp-btn" data-opp="left" data-sfx="none"><svg class="ic sm"><use href="#i-raio"/></svg> Palpite Adversário: Alvo está mais à ESQUERDA</button>
-        <button class="btn opp-btn" data-opp="right" data-sfx="none"><svg class="ic sm"><use href="#i-raio"/></svg> Mais à DIREITA</button>
+        <button class="btn opp-btn" data-opp="left" data-sfx="none"><svg class="ic sm"><use href="#i-raio"/></svg> Alvo mais à ESQUERDA</button>
+        <button class="btn opp-btn" data-opp="right" data-sfx="none"><svg class="ic sm"><use href="#i-raio"/></svg> Alvo mais à DIREITA</button>
       </div>
     </div>
     <button id="btnSync" class="btn primary pulse" data-show="team" data-sfx="none" hidden>Sincronizar (Revelar)</button>
     <button id="btnNext" class="btn primary" data-show="result" hidden>Próxima Rodada</button>
   </div>
+  </footer>
 </div>
 
 <!-- HOME -->
 <section id="home" class="overlay home" data-show="home">
   <div class="home-inner">
-    <svg class="home-ico" viewBox="0 0 24 24"><use href="#i-cerebro"/></svg>
-    <h1 class="logo">SINAPSE</h1>
-    <p class="tagline">Conecte mentes. Sintonize a frequência.</p>
+    <div class="home-brand">
+      <svg class="home-ico" viewBox="0 0 24 24"><use href="#i-cerebro"/></svg>
+      <h1 class="logo">SINAPSE</h1>
+      <p class="tagline">Conecte mentes. Sintonize a frequência.</p>
+    </div>
+    <div class="home-actions">
     <div class="modes">
       <button class="mode" data-pick="teams"><svg class="ic lg"><use href="#i-duelo"/></svg><b>2 Times</b><small>Disputa até 10 pontos</small></button>
       <button class="mode" data-pick="coop"><svg class="ic lg"><use href="#i-grupo"/></svg><b>Cooperativo</b><small>2+ jogadores · 8 rodadas</small></button>
@@ -103,6 +120,7 @@
     <button id="btnPremium" class="btn premium"></button>
     <button id="btnInstall" class="btn ghost" hidden><svg class="ic"><use href="#i-instalar"/></svg> Instalar como app</button>
     <button id="btnRules" class="link">Como jogar</button>
+    </div>
   </div>
 </section>
 

@@ -219,9 +219,9 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
 @keyframes float { 50% { transform: translateY(-6px); } }
 
 /* ---------- Cara de app ---------- */
-/* Fonte de títulos opcional: se existir fonts/Orbitron-VariableFont_wght.ttf, ela entra; senão fica a do sistema */
-@font-face { font-family: "SinapseTitulo"; src: url("fonts/Orbitron-VariableFont_wght.ttf") format("truetype"); font-weight: 400 900; font-display: swap; }
-:root { --titulo: "SinapseTitulo", "Segoe UI", Roboto, system-ui, sans-serif; }
+/* Fontes (Google Fonts; o service worker guarda os arquivos para jogar offline depois da 1ª abertura) */
+:root { --titulo: "Chakra Petch", "Segoe UI", Roboto, system-ui, sans-serif; --texto: "Plus Jakarta Sans", "Segoe UI", Roboto, system-ui, sans-serif; }
+body { font-family: var(--texto); }
 .logo, .brand, #cardTema, #resTitle, #overTitle, .sheet h2, .banner, .mode b { font-family: var(--titulo); }
 
 .ic { width: 20px; height: 20px; flex: none; display: inline-block; vertical-align: middle; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -265,3 +265,109 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
   .instr { font-size: 13px; }
   .btn { padding: 11px 14px; }
 }
+
+/* ================= HUD arcade: placares nos cantos, carta holográfica no centro ================= */
+.hudbar { display: flex; align-items: center; gap: 10px; min-height: 52px; }
+.hud-side { flex: 1 1 0; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hud-side.right { justify-content: flex-end; }
+.hud-slot { display: flex; gap: 6px; align-items: center; }
+.chip {
+  font-family: var(--titulo); display: inline-flex; align-items: baseline; gap: 7px; padding: 4px 14px 5px;
+  border-radius: 999px; border: 1.5px solid var(--c); color: var(--c); opacity: .45;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, 0));
+  text-transform: uppercase; letter-spacing: .1em; font-size: 12px; font-weight: 700;
+}
+.chip b { font-size: 21px; color: #fff; margin: 0; text-shadow: 0 0 10px var(--c); }
+.chip small { font-size: 11px; color: var(--muted); letter-spacing: .04em; }
+.chip.on { opacity: 1; box-shadow: 0 0 16px var(--c), inset 0 0 10px rgba(255, 255, 255, .08); }
+
+.card {
+  position: relative; isolation: isolate; flex: 0 1 auto; min-width: 0; max-width: 46%;
+  padding: 8px 28px 10px; border: 0; border-radius: 0; background: none; box-shadow: none;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, .65)) drop-shadow(0 0 14px rgba(76, 201, 240, .3));
+}
+.card::before, .card::after {
+  content: ''; position: absolute; z-index: -1;
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+}
+.card::before { inset: 0; background: linear-gradient(120deg, #4CC9F0, #8A6BFF 30%, #F72585 50%, #00F5D4 75%, #4CC9F0); background-size: 300% 100%; animation: holo 7s linear infinite; }
+.card::after { inset: 2px; background: radial-gradient(120% 150% at 30% 0%, #26388a 0%, #121b48 55%, #0b1030 100%); }
+.card-label { font-family: var(--titulo); letter-spacing: .32em; font-size: 10px; color: #9FB4E8; }
+#cardTema {
+  font-size: clamp(17px, 3vw, 28px); line-height: 1.05; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  filter: drop-shadow(0 0 8px rgba(159, 212, 255, .45));
+}
+@media (orientation: landscape) { .card { max-width: 56%; } }
+@keyframes holo { to { background-position: 300% 0; } }
+
+/* Polos: badges ancorados embaixo de cada cérebro (o JS põe no X exato de 0% e 100%) */
+.pole {
+  position: absolute; z-index: 2; top: 60%; transform: translateX(-50%); pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1px; max-width: 40%; width: max-content;
+  padding: 5px 12px 7px; border-radius: 12px; background: rgba(8, 12, 32, .85); border: 1.5px solid var(--pc);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .5), 0 0 12px var(--pcg);
+}
+.pole::before { content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top: 0; border-bottom: 7px solid var(--pc); }
+.pole span { font-family: var(--titulo); font-size: 11px; letter-spacing: .2em; color: var(--pc); }
+.pole.left b, .pole.right b { font-family: var(--titulo); font-size: clamp(13px, 1.9vw, 18px); line-height: 1.15; color: #fff; text-shadow: 0 0 10px var(--pc); }
+.pole.right { text-align: center; align-items: center; }
+.pole.left { --pc: var(--brainL); --pcg: rgba(61, 220, 255, .35); }
+.pole.right { --pc: var(--violet); --pcg: rgba(199, 125, 255, .35); }
+
+.foot { display: flex; flex-direction: column; gap: 8px; }
+.foot-info { min-width: 0; }
+.home-brand { display: flex; flex-direction: column; align-items: center; }
+.home-actions { display: flex; flex-direction: column; gap: 12px; }
+
+/* ================= Celular deitado (modo principal) ================= */
+@media (orientation: landscape) {
+  #app {
+    max-width: none; gap: 6px;
+    padding: calc(6px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+  }
+  .banner { font-size: 13px; min-height: 16px; }
+  .stage { min-height: 120px; }
+  .foot { flex-direction: row; align-items: center; gap: 14px; min-height: 54px; }
+  .foot-info { flex: 1 1 24%; min-width: 150px; }
+  .instr { text-align: left; font-size: 13px; padding: 0; }
+  .result { text-align: left; }
+  #resTitle { font-size: clamp(16px, 2.2vw, 24px); white-space: nowrap; }
+  #resPts { font-size: 14px; }
+  #resOpp { font-size: 12px; margin-top: 2px; }
+  .controls { flex: 1 1 64%; flex-direction: row; align-items: center; justify-content: flex-end; gap: 10px; }
+  .controls .btn { width: auto; }
+  .controls .btn.primary { padding: 12px 20px; min-width: 190px; }
+  .controls > .row { flex: none; }
+  .nudge { gap: 6px; }
+  .nudge span { display: none; }
+  .nudge .btn { width: 46px; }
+  .opp { display: flex; flex-direction: column; flex: 1 1 360px; min-width: 240px; max-width: 420px; }
+  .opp p { font-size: 10px; margin-bottom: 4px; }
+  .opp-btn { font-size: 11px; padding: 7px 8px; }
+  .home-inner { max-width: 840px; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 28px; }
+  .home-actions { gap: 10px; }
+  .logo { font-size: clamp(40px, 7vw, 76px); }
+  .mode { padding: 10px 6px; }
+  .btn.big { padding: 13px; font-size: 16px; }
+}
+@media (orientation: landscape) and (max-height: 640px) {
+  .card { padding: 6px 24px 8px; }
+  #cardTema { font-size: clamp(16px, 3vw, 24px); }
+  .btn { padding: 10px 14px; }
+}
+/* Retrato (só computador estreito: no celular aparece o aviso de girar) */
+@media (orientation: portrait) {
+  .hudbar { flex-wrap: wrap; }
+  .card { order: 3; max-width: none; flex-basis: 100%; }
+}
+
+/* ================= Aviso: gire o celular ================= */
+.rotate {
+  display: none; position: fixed; inset: 0; z-index: 80; flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px; padding: 30px; text-align: center; background: radial-gradient(70% 45% at 50% 45%, #13205a, var(--bg) 75%);
+}
+.rotate p { font-family: var(--titulo); font-size: 18px; color: #DDE8FF; max-width: 280px; letter-spacing: .03em; }
+.rotate-ico { width: 84px; height: 84px; fill: none; stroke: var(--cyan); stroke-width: 2.2; stroke-linecap: round; filter: drop-shadow(0 0 10px var(--cyan)); animation: girar 2.4s ease-in-out infinite; }
+@keyframes girar { 0%, 20% { transform: rotate(0); } 50%, 75% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 900px) { .rotate { display: flex; } }

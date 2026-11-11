@@ -13,7 +13,7 @@
   const COOP_COLOR = '#00F5D4';
   // Pulso do time, em % do eixo (distância ao centro): centro verde ±3 (6% de largura) = 4 pontos;
   // braços amarelos até ±11 (+8% de cada lado) = 2 pontos. O alvo é um ponto (a sinapse rompida).
-  const ZONE = [3, 11];
+  const ZONE = [3.5, 13.5];
   const Z_OUT = ZONE[ZONE.length - 1];
   const COL = {
     zone: ['#2F7BFF', '#FFD60A', '#39FF6A'], // 0 base azul, 1 braços (amarelo, 2), 2 centro (verde, 4)
@@ -95,7 +95,7 @@
 
   // ================= Elementos =================
   const els = {
-    hud: $('#hud'), banner: $('#banner'), card: $('#card'), cardTema: $('#cardTema'), poleL: $('#poleL'), poleR: $('#poleR'),
+    hudL: $('#hudL'), hudR: $('#hudR'), poleBoxL: $('#poleBoxL'), poleBoxR: $('#poleBoxR'), banner: $('#banner'), card: $('#card'), cardTema: $('#cardTema'), poleL: $('#poleL'), poleR: $('#poleR'),
     instr: $('#instr'), opp: $('.opp'), oppLabel: $('#oppLabel'), result: $('#result'), resTitle: $('#resTitle'),
     resPts: $('#resPts'), resOpp: $('#resOpp'), stage: $('#stage'), canvas: $('#wave'), btnNext: $('#btnNext'),
     btnContinue: $('#btnContinue'), btnMute: $('#btnMute'), btnPremium: $('#btnPremium'), btnInstall: $('#btnInstall'), toast: $('#toast'),
@@ -192,37 +192,46 @@
         });
         noise('highpass', 5000, null, 0.5, 0.6, 0.06);
       },
-      // Eletricidade contínua enquanto o dedo arrasta o pulso
+      // Sintetizador magnético enquanto o dedo arrasta o pulso: sawtooth + sine levemente desafinados,
+      // lowpass, tom de 110 Hz (0%) a 550 Hz (100%) — audível no alto-falante do celular; crepitar elétrico por cima.
       dragStart() {
         if (!ac || drag) return;
-        const o = ac.createOscillator(), bp = ac.createBiquadFilter(), g = ac.createGain();
+        const t = ac.currentTime;
+        const o1 = ac.createOscillator(), o2 = ac.createOscillator(), lp = ac.createBiquadFilter(), g = ac.createGain();
         const n = ac.createBufferSource(), hp = ac.createBiquadFilter(), ng = ac.createGain();
-        o.type = 'sawtooth'; o.frequency.value = 90;
-        bp.type = 'bandpass'; bp.Q.value = 6; bp.frequency.value = 800;
-        g.gain.value = 0;
+        o1.type = 'sawtooth'; o2.type = 'sine'; o2.detune.value = 9;
+        lp.type = 'lowpass'; lp.Q.value = 5; lp.frequency.value = 1400;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(0.11, t + 0.04);
         n.buffer = nbuf; n.loop = true;
-        hp.type = 'highpass'; hp.frequency.value = 2500;
+        hp.type = 'highpass'; hp.frequency.value = 3000;
         ng.gain.value = 0;
-        o.connect(bp); bp.connect(g); g.connect(master);
+        o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(master);
         n.connect(hp); hp.connect(ng); ng.connect(master);
-        o.start(); n.start();
-        drag = { o, bp, g, n, ng };
+        o1.start(); o2.start(); n.start();
+        drag = { o1, o2, lp, g, n, ng };
+        this.dragUpdate(round.guessX, 0);
       },
       dragUpdate(v, speed) {
         if (!drag) return;
         const s = Math.min(1, speed / 80), t = ac.currentTime;
-        drag.o.frequency.setTargetAtTime(60 + v * 1.8 + s * 40, t, 0.04);
-        drag.bp.frequency.setTargetAtTime(400 + v * 30, t, 0.05);
-        drag.g.gain.setTargetAtTime(0.025 + 0.1 * s, t, 0.04);
-        drag.ng.gain.setTargetAtTime(Math.random() < 0.25 ? 0.05 + 0.12 * s : 0.004, t, 0.008);
+        const f = 110 * Math.pow(5, v / 100); // 110 → 550 Hz, subida suave (exponencial)
+        drag.o1.frequency.setTargetAtTime(f, t, 0.03);
+        drag.o2.frequency.setTargetAtTime(f * 1.005, t, 0.03);
+        drag.lp.frequency.setTargetAtTime(f * 3 + 600 + s * 2200, t, 0.04);
+        drag.g.gain.setTargetAtTime(0.09 + 0.07 * s, t, 0.04);
+        drag.ng.gain.setTargetAtTime(Math.random() < 0.25 ? 0.03 + 0.08 * s : 0.002, t, 0.008);
       },
       dragStop() {
         if (!drag) return;
         const d = drag, t = ac.currentTime;
         drag = null;
-        d.g.gain.setTargetAtTime(0, t, 0.05);
-        d.ng.gain.setTargetAtTime(0, t, 0.05);
-        d.o.stop(t + 0.3); d.n.stop(t + 0.3);
+        for (const gn of [d.g.gain, d.ng.gain]) { // fade-out de 80 ms, sem clique
+          gn.cancelScheduledValues(t);
+          gn.setValueAtTime(gn.value, t);
+          gn.linearRampToValueAtTime(0, t + 0.08);
+        }
+        d.o1.stop(t + 0.1); d.o2.stop(t + 0.1); d.n.stop(t + 0.1);
       },
     };
   })();
@@ -241,7 +250,7 @@
     view.dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.width = Math.round(view.W * view.dpr);
     canvas.height = Math.round(view.H * view.dpr);
-    view.cy = view.H * 0.5;
+    view.cy = view.H * (view.W > view.H * 1.8 ? 0.44 : 0.5); // deitado: onda um pouco acima, polos cabem embaixo
     view.r = clamp(Math.min(view.W * 0.075, view.H * 0.22), 18, 60);
     view.bxL = 8 + view.r * 1.25;
     view.bxR = view.W - 8 - view.r * 1.25;
@@ -249,10 +258,19 @@
     view.x1 = view.bxR - view.r * 1.12; // polo 100 (borda do cérebro direito)
     view.k = (7 * Math.PI * 2) / Math.max(40, view.x1 - view.x0); // ~7 ciclos no axônio
     view.A = Math.min(view.H, (view.x1 - view.x0) * 0.75); // escala de amplitude (celular em pé não vira "agulha")
+    placePoles();
     dust.length = 0;
     for (let i = 0; i < 38; i++) {
       dust.push({ x: Math.random() * view.W, y: Math.random() * view.H, vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8, p: Math.random() * 6.28, s: 0.6 + Math.random() * 1.4 });
     }
+  }
+  // Polos ancorados embaixo de cada cérebro, centrados no X exato de 0% e 100% (sem vazar da mesa)
+  function placePoles() {
+    [[els.poleBoxL, view.x0, view.x0], [els.poleBoxR, view.x1, view.W - view.x1]].forEach(([el, x, room]) => {
+      el.style.left = x + 'px';
+      el.style.maxWidth = Math.max(110, 2 * room - 12) + 'px';
+      el.style.top = Math.max(4, Math.min(view.H - el.offsetHeight - 6, view.cy + view.r * 0.95 + 10)) + 'px';
+    });
   }
   const vx = (v) => view.x0 + ((view.x1 - view.x0) * v) / 100;
   const valueFromClientX = (cx) => {
@@ -511,15 +529,56 @@
   }
   function label(text, x, y, color) {
     ctx.save();
-    ctx.font = '800 11px system-ui, sans-serif';
+    ctx.font = '700 12px "Chakra Petch", system-ui, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const w = ctx.measureText(text).width;
+    ctx.fillStyle = 'rgba(7, 11, 25, .75)';
+    const lx = clamp(x, w / 2 + 10, view.W - w / 2 - 10);
+    ctx.fillRect(lx - w / 2 - 6, y - 9, w + 12, 18);
     ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 10;
-    ctx.fillText(text, clamp(x, 30, view.W - 30), y);
+    ctx.fillText(text, lx, y);
+    ctx.restore();
+  }
+  // Linha laser tracejada ligando a etiqueta ao ponto exato
+  function laser(x, y0, y1, color) {
+    ctx.save();
+    ctx.setLineDash([4, 5]);
+    ctx.lineDashOffset = -fx.t * 30;
+    ctx.strokeStyle = hexA(color, 0.85); ctx.shadowColor = color; ctx.shadowBlur = 8; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+    ctx.restore();
+  }
+  const labelTopY = () => Math.max(14, view.cy - view.A * 0.36 - 18);
+  const labelBotY = () => Math.min(view.H - 12, view.cy + view.A * 0.36 + 18);
+  // Régua neural: trilho no eixo e marcas fixas em 25%, 50% (losango) e 75% para o olho ter referência
+  function drawRuler() {
+    const cy = view.cy, h = view.A * 0.3;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(120, 160, 255, .14)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(view.x0, cy); ctx.lineTo(view.x1, cy); ctx.stroke();
+    for (const v of [25, 50, 75]) {
+      const x = vx(v), mid = v === 50;
+      ctx.setLineDash(mid ? [] : [3, 5]);
+      ctx.strokeStyle = mid ? 'rgba(159, 212, 255, .28)' : 'rgba(159, 212, 255, .2)';
+      ctx.beginPath(); ctx.moveTo(x, cy - h); ctx.lineTo(x, cy + h); ctx.stroke();
+      ctx.setLineDash([]);
+      const s = mid ? 6 : 3.5; // losango no topo e na base de cada marca
+      ctx.fillStyle = mid ? 'rgba(159, 212, 255, .5)' : 'rgba(159, 212, 255, .32)';
+      for (const y of [cy - h, cy + h]) {
+        ctx.beginPath(); ctx.moveTo(x, y - s); ctx.lineTo(x + s, y); ctx.lineTo(x, y + s); ctx.lineTo(x - s, y); ctx.closePath(); ctx.fill();
+      }
+    }
+    ctx.strokeStyle = 'rgba(159, 212, 255, .22)'; ctx.lineWidth = 1.2; // anel neural no centro
+    ctx.beginPath(); ctx.arc(vx(50), cy, 11, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
   }
   function drawMarkers(sc) {
     const col = teamColor();
-    if (phase === 'guideShown') label('▼ ALVO: SINAPSE ROMPIDA', vx(round.targetX), 13, '#9FD4FF');
+    if (phase === 'guideShown') {
+      const tx = vx(round.targetX), ty = labelTopY();
+      laser(tx, ty + 9, view.cy - 12, '#9FD4FF');
+      label('▼ ALVO: SINAPSE ROMPIDA', tx, ty, '#9FD4FF');
+    }
     if (phase === 'team' || phase === 'suspense') {
       const [x, y] = node(round.guessX, sc.bumps, col);
       if (phase === 'team' && !round.touched) {
@@ -532,15 +591,11 @@
         ctx.restore();
       }
     } else if ((phase === 'result' || phase === 'over') && round.result) {
-      const gx = vx(round.guessX);
-      ctx.save();
-      ctx.setLineDash([4, 6]);
-      ctx.strokeStyle = hexA(col, 0.7);
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(gx, 24); ctx.lineTo(gx, view.H - 20); ctx.stroke();
-      ctx.restore();
-      label('▼ ALVO', vx(round.targetX), 13, '#9FD4FF');
-      label('PALPITE', gx, view.H - 10, col);
+      const gx = vx(round.guessX), tx = vx(round.targetX), ty = labelTopY(), by = labelBotY();
+      laser(tx, ty + 9, view.cy - 12, '#9FD4FF');
+      laser(gx, by - 9, waveY(gx, round.guessX, sc.bumps) + 8, col);
+      label('▼ ALVO', tx, ty, '#9FD4FF');
+      label('▲ PALPITE', gx, by, col);
     }
   }
   function drawBolts(sc) { // raios do palpite até os dois cérebros (3 e 4 pontos)
@@ -621,6 +676,7 @@
     drawDust();
     const sc = scene();
     curGap = sc.gap == null || sc.gs <= 0.01 ? null : { c: sc.gap, h: gapHalf(sc.gs) };
+    drawRuler();
     drawWave(sc);
     drawSynapse(sc);
     const glow = brainGlow();
@@ -860,6 +916,7 @@
     els.cardTema.textContent = card ? card.tema : '—';
     els.poleL.textContent = card ? card.poloEsquerdo : '';
     els.poleR.textContent = card ? card.poloDireito : '';
+    placePoles();
     let banner = '', instr = '';
     if (game) {
       switch (phase) {
@@ -893,12 +950,15 @@
     if (phase === 'home') renderHome();
   }
   function renderHud(scored) {
-    if (!game) { els.hud.innerHTML = ''; return; }
-    if (game.mode === 'teams') {
+    if (!game) { els.hudL.innerHTML = els.hudR.innerHTML = ''; return; }
+    if (game.mode === 'teams') { // placar de cada time no seu canto
       const pop = (i) => scored && ((i === game.turn && scored.pts) || (i !== game.turn && scored.opp));
-      els.hud.innerHTML = TEAM.map((t, i) => `<span class="chip${i === game.turn ? ' on' : ''}${pop(i) ? ' pop' : ''}" style="--c:${t.color}">${t.short} <b>${game.scores[i]}</b></span>`).join('') + `<span class="goal">meta ${WIN_SCORE}</span>`;
+      const chip = (i) => `<span class="chip${i === game.turn ? ' on' : ''}${pop(i) ? ' pop' : ''}" style="--c:${TEAM[i].color}">${TEAM[i].short} <b>${game.scores[i]}</b><small>/${WIN_SCORE}</small></span>`;
+      els.hudL.innerHTML = chip(0);
+      els.hudR.innerHTML = chip(1);
     } else {
-      els.hud.innerHTML = `<span class="chip on${scored && scored.pts ? ' pop' : ''}" style="--c:${COOP_COLOR}">Pontos <b>${game.coopScore}</b></span><span class="goal">${game.round}/${COOP_ROUNDS}</span>`;
+      els.hudL.innerHTML = `<span class="chip on${scored && scored.pts ? ' pop' : ''}" style="--c:${COOP_COLOR}">Pontos <b>${game.coopScore}</b></span>`;
+      els.hudR.innerHTML = `<span class="chip on" style="--c:#C77DFF">Rodada <b>${game.round}</b><small>/${COOP_ROUNDS}</small></span>`;
     }
   }
   function renderHome() {
@@ -974,12 +1034,16 @@
   $$('.modal[data-dismiss]').forEach((m) => m.addEventListener('click', (e) => {
     if (e.target === m || e.target.closest('[data-close]')) m.hidden = true;
   }));
-  document.addEventListener('pointerdown', () => audio.init(), true); // áudio só liga após um toque
+  document.addEventListener('pointerdown', () => { // áudio só liga após um toque
+    audio.init();
+    // App instalado/tela cheia: tenta travar deitado (o navegador comum ignora; aí vale o aviso de girar)
+    try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* sem suporte */ }
+  }, true);
   document.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.sfx !== 'none') audio.click();
-    buzz(8); // toque "físico" curto em todo botão
+    buzz(25); // toque "físico" em todo botão
   });
   els.btnInstall.onclick = installApp;
   window.addEventListener('keydown', (e) => {

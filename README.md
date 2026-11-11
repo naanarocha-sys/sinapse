@@ -25,7 +25,8 @@ Abrir http://localhost:8080 (no Chrome, F12 → modo celular para ver como no te
 ## Regras no código (topo do `app.js`)
 
 - O alvo é um ponto: a sinapse rompida na onda azul. O palpite é o pulso do time.
-- `ZONE = [3, 11]`: o rompido no centro verde do pulso (até 3%) → 4 pontos; num braço amarelo (até 11%) → 2; fora → 0. As mesmas larguras pintam o pulso.
+- `ZONE = [3.5, 13.5]`: o rompido no centro verde do pulso (até 3,5%) → 4 pontos; num braço amarelo (até 13,5%) → 2; fora → 0. As mesmas larguras pintam o pulso.
+- Jogo pensado para o celular deitado (em pé aparece o aviso de girar). Régua de referência na onda em 25/50/75%.
 - `WIN_SCORE = 10` (2 Times), `COOP_ROUNDS = 8` (Cooperativo).
 - Interferência: +1 ao adversário se acertar o lado e o time não fizer 4.
 - Salvos: `sinapse.save.v1` (partida) e `sinapse.settings.v1` (premium, som, modo).
