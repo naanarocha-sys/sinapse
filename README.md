@@ -2,6 +2,8 @@
 
 Jogo web mobile de "conexão neural": a Mente Brilhante vê o alvo escondido na onda entre dois polos, dá uma dica verbal e o time arrasta o pulso até onde acha que a dica aponta. Projeto separado do jogo de pesca (só mora na mesma pasta).
 
+**Jogar / instalar no celular:** https://naanarocha-sys.github.io/sinapse/ (GitHub Pages, publica sozinho a cada push na `main`; troque o `CACHE` do `sw.js` a cada versão).
+
 ## Rodar
 
 ```
